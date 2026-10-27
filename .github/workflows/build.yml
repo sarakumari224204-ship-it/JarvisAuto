@@ -28,6 +28,11 @@ jobs:
     - name: Accept Android Licenses
       run: yes | sdkmanager --licenses || true
 
+    - name: Enable AndroidX
+      run: |
+        echo "android.useAndroidX=true" >> gradle.properties
+        echo "android.enableJetifier=true" >> gradle.properties
+
     - name: Grant Execute Permission
       run: chmod +x gradlew
 
