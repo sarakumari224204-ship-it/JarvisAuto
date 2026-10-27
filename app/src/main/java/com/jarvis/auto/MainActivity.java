@@ -1,133 +1,81 @@
 package com.jarvis.auto;
 
-import android.Manifest;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Bundle;
-import android.speech.RecognitionListener;
-import android.speech.RecognizerIntent;
-import android.speech.SpeechRecognizer;
-import android.speech.tts.TextToSpeech;
-import android.widget.Button;
-import android.widget.TextView;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import java.util.ArrayList;
-import java.util.Locale;
+import android.accessibilityservice.AccessibilityService;
+import android.accessibilityservice.GestureDescription;
+import android.graphics.Path;
+import android.view.accessibility.AccessibilityEvent;
+import android.view.accessibility.AccessibilityNodeInfo;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class AutoTouchService extends AccessibilityService {
 
-    private TextView tvCommand;
-    private Button btnSpeak;
-    private SpeechRecognizer speechRecognizer;
-    private TextToSpeech textToSpeech;
+    private static AutoTouchService instance;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onServiceConnected() {
+        super.onServiceConnected();
+        instance = this;
+    }
 
-        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
-        layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-        layout.setGravity(android.view.Gravity.CENTER);
-        layout.setPadding(40, 40, 40, 40);
+    public static AutoTouchService getInstance() {
+        return instance;
+    }
 
-        TextView tvTitle = new TextView(this);
-        tvTitle.setText("JARVIS CONTROLLER");
-        tvTitle.setTextSize(24);
-        tvTitle.setGravity(android.view.Gravity.CENTER);
-        layout.addView(tvTitle);
+    @Override
+    public void onAccessibilityEvent(AccessibilityEvent event) {}
 
-        tvCommand = new TextView(this);
-        tvCommand.setText("Jarvis bolne aur sunne ke liye tayyar hai.");
-        tvCommand.setTextSize(16);
-        tvCommand.setPadding(0, 30, 0, 50);
-        tvCommand.setGravity(android.view.Gravity.CENTER);
-        layout.addView(tvCommand);
+    @Override
+    public void onInterrupt() {}
 
-        btnSpeak = new Button(this);
-        btnSpeak.setText("VOICE COMMAND DEIN");
-        layout.addView(btnSpeak);
+    @Override
+    public boolean onUnbind(android.content.Intent intent) {
+        instance = null;
+        return super.onUnbind(intent);
+    }
 
-        setContentView(layout);
+    public void clickAt(float x, float y) {
+        Path swipePath = new Path();
+        swipePath.moveTo(x, y);
+        GestureDescription.Builder gestureBuilder = new GestureDescription.Builder();
+        gestureBuilder.addStroke(new GestureDescription.StrokeDescription(swipePath, 0, 100));
+        dispatchGesture(gestureBuilder.build(), null, null);
+    }
 
-        // Text-To-Speech setup
-        textToSpeech = new TextToSpeech(this, status -> {
-            if (status == TextToSpeech.SUCCESS) {
-                textToSpeech.setLanguage(new Locale("hi", "IN"));
-            }
-        });
+    public void scrollDown() {
+        Path swipePath = new Path();
+        swipePath.moveTo(500, 1500);
+        swipePath.lineTo(500, 500);
+        GestureDescription.Builder gestureBuilder = new GestureDescription.Builder();
+        gestureBuilder.addStroke(new GestureDescription.StrokeDescription(swipePath, 0, 300));
+        dispatchGesture(gestureBuilder.build(), null, null);
+    }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, 1);
-        }
+    public void scrollUp() {
+        Path swipePath = new Path();
+        swipePath.moveTo(500, 500);
+        swipePath.lineTo(500, 1500);
+        GestureDescription.Builder gestureBuilder = new GestureDescription.Builder();
+        gestureBuilder.addStroke(new GestureDescription.StrokeDescription(swipePath, 0, 300));
+        dispatchGesture(gestureBuilder.build(), null, null);
+    }
 
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
-        speechRecognizer.setRecognitionListener(new RecognitionListener() {
-            @Override public void onReadyForSpeech(Bundle params) { tvCommand.setText("Sun raha hoon, boliye..."); }
-            @Override public void onBeginningOfSpeech() {}
-            @Override public void onRmsChanged(float rmsdB) {}
-            @Override public void onBufferReceived(byte[] buffer) {}
-            @Override public void onEndOfSpeech() {}
-            @Override public void onError(int error) { tvCommand.setText("Aawaz samajh nahi aayi, dobara boliye."); }
-
-            @Override
-            public void onResults(Bundle results) {
-                ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
-                if (matches != null && !matches.isEmpty()) {
-                    String userSaid = matches.get(0);
-                    processCommand(userSaid);
+    public boolean clickByText(String text) {
+        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+        if (rootNode == null) return false;
+        List<AccessibilityNodeInfo> list = rootNode.findAccessibilityNodeInfosByText(text);
+        if (list != null && !list.isEmpty()) {
+            for (AccessibilityNodeInfo node : list) {
+                if (node.isClickable()) {
+                    node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    return true;
+                }
+                AccessibilityNodeInfo parent = node.getParent();
+                if (parent != null && parent.isClickable()) {
+                    parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    return true;
                 }
             }
-
-            @Override public void onPartialResults(Bundle partialResults) {}
-            @Override public void onEvent(int eventType, Bundle params) {}
-        });
-
-        btnSpeak.setOnClickListener(v -> startListening());
-    }
-
-    private void startListening() {
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN");
-        speechRecognizer.startListening(intent);
-    }
-
-    private void processCommand(String text) {
-        String lower = text.toLowerCase();
-        String reply;
-
-        if (lower.contains("kya kya kar sakte ho") || lower.contains("kya kar sakte ho")) {
-            reply = "Main aapke phone ki screen control kar sakta hoon, apps open kar sakta hoon aur aawaz se command follow kar sakta hoon.";
-        } else if (lower.contains("kaise ho")) {
-            reply = "Main badhiya hoon. Aap bataiye kya madad karoon?";
-        } else if (lower.contains("khol") || lower.contains("open")) {
-            reply = "Thik hai, command execute kar raha hoon.";
-            if (AutoTouchService.getInstance() != null) {
-                AutoTouchService.getInstance().clickScreen(500, 500);
-            }
-        } else {
-            reply = "Aapne kaha: " + text + ". Main iska reply tayyar kar raha hoon.";
         }
-
-        tvCommand.setText("Aap: " + text + "\n\nJarvis: " + reply);
-        speakOut(reply);
-    }
-
-    private void speakOut(String speechText) {
-        if (textToSpeech != null) {
-            textToSpeech.speak(speechText, TextToSpeech.QUEUE_FLUSH, null, null);
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (speechRecognizer != null) speechRecognizer.destroy();
-        if (textToSpeech != null) {
-            textToSpeech.stop();
-            textToSpeech.shutdown();
-        }
-        super.onDestroy();
+        return false;
     }
 }
