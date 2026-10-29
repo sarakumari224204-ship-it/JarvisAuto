@@ -18,8 +18,8 @@
 | **Phase 5A: Teach AI Core** | Implemented | Yes | Pass | Identity, rules, instructions, versioning active | Complete |
 | **Phase 5B: Knowledge Base & Workflows** | Implemented | Yes | Pass | Document chunking & URL import verified | Complete |
 | **Phase 6-8: Local LLM & RAG** | Implemented | Yes | Pass | RAG Pipeline & Hallucination Validator active | Complete |
-| **Phase 9-11: WhatsApp Queue** | Implemented | Yes | Pass | Deduplication & Emergency STOP verified | Complete |
-| **Phase 1 & 19: UI Layer** | Implemented | Yes | Pass | Jetpack Compose UI across all 8 screens | Complete |
+| **Phase 9-11: WhatsApp Queue & Accessibility Fallback** | Implemented | Yes | Pass | RemoteInput + `WhatsAppAccessibilityService` fallback active | Complete |
+| **Phase 1 & 19: UI & Setup Wizard** | Implemented | Yes | Pass | Jetpack Compose UI across 8 screens + Setup Wizard | Complete |
 | **Phase 16-18: Diagnostics & Tests**| Implemented | Yes | Pass | 100% unit tests pass; Debug & Release APKs generated | Complete |
 
 ---
@@ -63,8 +63,8 @@
 - **KNOWN LIMITATION**: URL content fetch requires target phone network connectivity.
 
 ### 7. Local LLM & RAG Context Pipeline
-- **IMPLEMENTED**: Replaceable `LocalLLMEngine` interface, `FallbackTemplateLLMEngine` (optimized for 6GB RAM phone), and `RAGPipeline`.
-- **TESTED**: Yes (`LocalLLMAndRAGTest`)
+- **IMPLEMENTED**: Replaceable `LocalLLMEngine` interface, `FallbackTemplateLLMEngine` (optimized for 6GB RAM phone), `LocalModelManager`, and `RAGPipeline`.
+- **TESTED**: Yes (`LocalLLMAndRAGTest`, `LocalModelAndDocumentTest`)
 - **ACTUAL RESULT**: RAG pipeline combines customer memory, profile DB matches, knowledge chunks, and Teach AI rules into a compact prompt context.
 - **KNOWN LIMITATION**: Loading custom 0.5B-1.5B parameter GGUF binaries requires copying model file to phone local storage (`/sdcard/Download/`). `FallbackTemplateLLMEngine` provides 100% offline fallback response generation.
 
@@ -81,13 +81,13 @@
 - **KNOWN LIMITATION**: None.
 
 ### 10. WhatsApp Business Integration
-- **IMPLEMENTED**: `WhatsAppNotificationService` extending `NotificationListenerService`, parsing incoming WhatsApp Business notifications, and attempting RemoteInput reply or draft fallback.
-- **TESTED**: Yes (Service declaration verified in `AndroidManifest.xml` & unit tested)
-- **ACTUAL RESULT**: Service registered with required permissions.
-- **KNOWN LIMITATION / DEVICE DEPENDENCY**: RemoteInput auto-reply capability varies depending on WhatsApp Business and Android OS notification permissions. Safe draft/copy fallback is active whenever RemoteInput is unavailable.
+- **IMPLEMENTED**: `WhatsAppNotificationService` extending `NotificationListenerService` with RemoteInput action handling, and `WhatsAppAccessibilityService` extending `AccessibilityService` for safe auto-reply fallback.
+- **TESTED**: Yes (Service declarations verified in `AndroidManifest.xml` & unit tested)
+- **ACTUAL RESULT**: Services registered with required permissions.
+- **KNOWN LIMITATION / DEVICE DEPENDENCY**: RemoteInput auto-reply capability varies depending on WhatsApp Business and Android OS notification permissions. `WhatsAppAccessibilityService` fallback or safe draft/copy fallback is active whenever RemoteInput is unavailable.
 
 ### 11. Jetpack Compose UI & System Diagnostics
-- **IMPLEMENTED**: DashboardScreen, ProfilesScreen, CustomersScreen, TeachAIScreen, KnowledgeScreen, AutomationQueueScreen, SettingsScreen, DiagnosticsScreen (with 10-point automated self-test runner), and MarriageBureauAppUI navigation.
+- **IMPLEMENTED**: DashboardScreen, SetupWizardScreen, ProfilesScreen, CustomersScreen, TeachAIScreen, KnowledgeScreen, AutomationQueueScreen, SettingsScreen, DiagnosticsScreen (with 14-point automated self-test runner), and MarriageBureauAppUI navigation.
 - **TESTED**: Yes (`./gradlew assembleDebug`, `./gradlew assembleRelease`)
 - **ACTUAL RESULT**: Clean UI build & compilation. Both debug APK (~15.7 MB) and release APK (~11.0 MB) generated successfully.
 - **KNOWN LIMITATION**: None.

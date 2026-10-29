@@ -100,15 +100,20 @@ class WhatsAppNotificationService : NotificationListenerService() {
         // Save agent response in customer memory
         customerRepo.addMessage(customer.customerId, com.marriagebureau.ai.data.db.entity.MessageSender.AGENT, finalResponse)
 
-        // 6. Attempt RemoteInput reply if available
+        // 6. Attempt RemoteInput reply first
+        var sentViaRemoteInput = false
         if (notification != null && !EmergencyStopController.isEmergencyStopped) {
-            val replied = attemptRemoteInputReply(notification, finalResponse)
-            if (replied) {
-                queueRepo.updateMessageStatus(
-                    messageId = queueItem.messageId,
-                    status = QueueStatus.SENT
-                )
-            }
+            sentViaRemoteInput = attemptRemoteInputReply(notification, finalResponse)
+        }
+
+        if (sentViaRemoteInput) {
+            queueRepo.updateMessageStatus(
+                messageId = queueItem.messageId,
+                status = QueueStatus.SENT
+            )
+        } else {
+            // Fallback: Queue for Accessibility auto-send or manual Draft action
+            PendingAccessibilityReplyHolder.setPendingReply(finalResponse)
         }
     }
 
