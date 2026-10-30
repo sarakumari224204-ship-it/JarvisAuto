@@ -1,14 +1,27 @@
-# Testing Strategy, Audit & Results Log
+# Testing Strategy, Real-Device Audit & Results Log
 
-## Root-Cause Audit: WhatsApp Notification Reply Mechanics
-During initial real-device tests, incoming WhatsApp notifications were successfully detected and extracted. However, automated sending can be blocked on certain Android/WhatsApp Business versions if:
-1. **RemoteInput Omission**: WhatsApp Business suppresses the direct `RemoteInput` reply action in standard heads-up notifications for specific security policies or OS versions.
-2. **Action Index Shift**: The `Reply` action is not guaranteed to be the first action item in `Notification.actions`.
+## Environment & Real-Device Capability Disclosure
+- **Environment**: Linux x86_64 Sandbox Build Server
+- **Current Commit SHA**: `e63a213c5bf54bf17557d551c4b14ed8013d463c`
+- **Real Physical Phone Attached**: NO
+- **Active WhatsApp Business App Instance**: NO
+- **Explicit Status**:
+  `REAL DEVICE WHATSAPP SEND TEST = UNVERIFIED`
 
-### Fixes Implemented:
-1. **Dynamic Action Traversal**: `WhatsAppNotificationService` dynamically searches all notification actions for any action containing `RemoteInput` with `allowFreeFormInput = true`.
-2. **Accessibility Auto-Send Fallback**: Created `WhatsAppAccessibilityService` extending `AccessibilityService`. When `RemoteInput` is unsupported by the OS/notification, the generated response is queued into `PendingAccessibilityReplyHolder`. When WhatsApp is launched, the accessibility service detects the message field, sets text, and clicks Send automatically.
-3. **Draft/Copy Fallback**: If both RemoteInput and Accessibility permission are ungranted, the system safely saves the verified response in the message queue as a Draft/Copy action, preventing wrong-recipient or cross-chat errors.
+*Note: Per strict instructions, sending messages directly into a live WhatsApp Business chat cannot be marked PASS based on compilation or unit tests alone. It must be explicitly reported as UNVERIFIED when no physical Android device with an active WhatsApp Business installation is attached to the build environment.*
+
+---
+
+## Root-Cause Analysis: WhatsApp Notification Reply Mechanics
+
+### Why WhatsApp Replies Fail On Some Devices:
+1. **Notification Action Traversal**: On certain Android versions, WhatsApp Business suppresses direct `RemoteInput` reply fields in standard heads-up notifications.
+2. **Action Index Ambiguity**: The `Reply` action is not guaranteed to be the first action item in `Notification.actions`.
+
+### Implemented Dual-Layer Reply Architecture & Fallback:
+1. **Layer 1 (RemoteInput Direct Reply)**: `WhatsAppNotificationService` dynamically searches all notification actions for any action containing `RemoteInput` with `allowFreeFormInput = true`.
+2. **Layer 2 (Accessibility Auto-Send Fallback)**: Created `WhatsAppAccessibilityService` extending `AccessibilityService`. When `RemoteInput` is unsupported by the notification, the generated response is queued into `PendingAccessibilityReplyHolder`. When WhatsApp is opened, the accessibility service detects the message field, sets text, and clicks Send automatically.
+3. **Layer 3 (Draft/Copy Action Fallback)**: If both RemoteInput and Accessibility permission are ungranted, the system safely saves the verified response in the message queue as a Draft/Copy action, preventing wrong-recipient or cross-chat errors.
 
 ---
 
@@ -46,9 +59,9 @@ Executed using `ProfileBenchmark` with 10,000 generated realistic marriage profi
 
 ---
 
-## Final Acceptance Matrix
+## Complete PASS / FAIL / UNVERIFIED Acceptance Matrix
 
-| # | Acceptance Requirement | Status | Verification & Fallback Explanation |
+| # | Feature / Capability | Status | Verification & Fallback Notes |
 |---|---|---|---|
 | 1 | Standalone Clean Android Project (`com.marriagebureau.ai`) | **PASS** | Zero legacy code/secrets. Standalone gradle build. |
 | 2 | 10,000 Profile Room Database with Indexes | **PASS** | Verified via `MarriageProfileTest` and `ProfileBenchmark` (5.3ms latency). |
@@ -67,7 +80,14 @@ Executed using `ProfileBenchmark` with 10,000 generated realistic marriage profi
 | 15| Persistent Message Queue (Deduplication & Retry) | **PASS** | Verified via `WhatsAppAndQueueTest`. |
 | 16| Emergency STOP System | **PASS** | Instantly halts queue and cancels pending responses. |
 | 17| WhatsApp NotificationListenerService | **PASS** | Registered in `AndroidManifest.xml` with `NotificationListenerService`. |
-| 18| Notification RemoteInput Reply Capability | **UNVERIFIED / DEVICE-DEPENDENT** | RemoteInput actions depend on WhatsApp/Android OS notification capabilities. **Fallback**: `WhatsAppAccessibilityService` auto-sends message when enabled, or saves draft response for manual copy/send when RemoteInput is unavailable. |
+| 18| Real-Device WhatsApp Business Message Send | **UNVERIFIED** | Requires physical Android phone + active WhatsApp Business account. **Fallback**: `WhatsAppAccessibilityService` + Draft/Copy action fallback. |
 | 19| Automation Modes & Human Handoff | **PASS** | Draft Only, Human Approval, Low-Risk Auto modes and `HUMAN_REQUIRED` state active. |
-| 20| Jetpack Compose UI & Diagnostics | **PASS** | All 8 Compose screens build & assemble cleanly (`assembleDebug`, `assembleRelease`). |
+| 20| Jetpack Compose UI & Diagnostics | **PASS** | All Compose screens build cleanly (`assembleDebug`, `assembleRelease`). |
 | 21| Privacy & Security Controls | **PASS** | 100% offline local storage; zero cloud upload; no secrets committed. |
+
+---
+
+## Build Artifacts & Links
+
+- **Debug APK Location**: `app/build/outputs/apk/debug/app-debug.apk` (~15.7 MB)
+- **Release APK Location**: `app/build/outputs/apk/release/app-release-unsigned.apk` (~11.0 MB)

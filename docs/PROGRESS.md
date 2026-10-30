@@ -3,7 +3,16 @@
 ## Status Legend
 - **Status**: Implemented / In Progress / Pending
 - **Tested**: Yes / No
-- **Test Result**: Pass / Fail / N/A
+- **Test Result**: Pass / Fail / N/A / Unverified (Real-Device Dependent)
+
+---
+
+## Environment & Real-Device Status Disclosure
+
+- **Commit SHA**: `e63a213c5bf54bf17557d551c4b14ed8013d463c`
+- **Build Server Environment**: Linux Headless Sandbox
+- **Real Physical Android Device Attached**: NO
+- **WhatsApp Business Direct Send**: **UNVERIFIED (Requires Physical Device)**
 
 ---
 
@@ -18,13 +27,13 @@
 | **Phase 5A: Teach AI Core** | Implemented | Yes | Pass | Identity, rules, instructions, versioning active | Complete |
 | **Phase 5B: Knowledge Base & Workflows** | Implemented | Yes | Pass | Document chunking & URL import verified | Complete |
 | **Phase 6-8: Local LLM & RAG** | Implemented | Yes | Pass | RAG Pipeline & Hallucination Validator active | Complete |
-| **Phase 9-11: WhatsApp Queue & Accessibility Fallback** | Implemented | Yes | Pass | RemoteInput + `WhatsAppAccessibilityService` fallback active | Complete |
+| **Phase 9-11: WhatsApp Queue & Accessibility Fallback** | Implemented | Yes | Pass (Unit) / Unverified (Real Device) | RemoteInput + `WhatsAppAccessibilityService` fallback active | Complete |
 | **Phase 1 & 19: UI & Setup Wizard** | Implemented | Yes | Pass | Jetpack Compose UI across 8 screens + Setup Wizard | Complete |
 | **Phase 16-18: Diagnostics & Tests**| Implemented | Yes | Pass | 100% unit tests pass; Debug & Release APKs generated | Complete |
 
 ---
 
-## Comprehensive Feature Report
+## Feature-by-Feature Implementation & Verification Summary
 
 ### 1. Standalone Project Initialization
 - **IMPLEMENTED**: Standalone Android application under namespace `com.marriagebureau.ai`. All legacy files purged.
@@ -80,11 +89,13 @@
 - **ACTUAL RESULT**: Deduplicates identical incoming messages within 60s window. Emergency STOP halts processing and cancels pending replies instantly.
 - **KNOWN LIMITATION**: None.
 
-### 10. WhatsApp Business Integration
+### 10. WhatsApp Business Integration & RemoteInput / Accessibility Fallback
 - **IMPLEMENTED**: `WhatsAppNotificationService` extending `NotificationListenerService` with RemoteInput action handling, and `WhatsAppAccessibilityService` extending `AccessibilityService` for safe auto-reply fallback.
 - **TESTED**: Yes (Service declarations verified in `AndroidManifest.xml` & unit tested)
 - **ACTUAL RESULT**: Services registered with required permissions.
-- **KNOWN LIMITATION / DEVICE DEPENDENCY**: RemoteInput auto-reply capability varies depending on WhatsApp Business and Android OS notification permissions. `WhatsAppAccessibilityService` fallback or safe draft/copy fallback is active whenever RemoteInput is unavailable.
+- **KNOWN LIMITATION / DEVICE DEPENDENCY**:
+  `REAL DEVICE WHATSAPP SEND = UNVERIFIED`
+  RemoteInput auto-reply capability depends on physical phone and active WhatsApp Business app installation. `WhatsAppAccessibilityService` fallback or safe draft/copy fallback is active whenever RemoteInput is unavailable.
 
 ### 11. Jetpack Compose UI & System Diagnostics
 - **IMPLEMENTED**: DashboardScreen, SetupWizardScreen, ProfilesScreen, CustomersScreen, TeachAIScreen, KnowledgeScreen, AutomationQueueScreen, SettingsScreen, DiagnosticsScreen (with 14-point automated self-test runner), and MarriageBureauAppUI navigation.
