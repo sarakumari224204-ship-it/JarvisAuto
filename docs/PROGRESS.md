@@ -1,8 +1,9 @@
 # Marriage Bureau AI Agent - Progress & Real-Device Status Log
 
-## Real-Device Capabilities Disclosure
+## Environment, Package & Commit Verification
+- **Application Package ID**: `com.marriagebureau.ai`
 - **Commit SHA**: `e63a213c5bf54bf17557d551c4b14ed8013d463c`
-- **Build Environment**: Linux Headless Build Server
+- **Build Server Environment**: Linux Headless Build Server
 - **Physical Device Attached**: NO
 - **Live WhatsApp Business Send Status**: `REAL DEVICE TEST = UNVERIFIED`
 
@@ -42,8 +43,9 @@
 
 ---
 
-## Build Artifact Locations
+## Build Artifact Locations & Package Verification
 
+- **Package ID**: `com.marriagebureau.ai`
 - **Commit SHA**: `e63a213c5bf54bf17557d551c4b14ed8013d463c`
 - **Debug APK**: `app/build/outputs/apk/debug/app-debug.apk` (~15.7 MB)
 - **Release APK**: `app/build/outputs/apk/release/app-release-unsigned.apk` (~11.0 MB)
