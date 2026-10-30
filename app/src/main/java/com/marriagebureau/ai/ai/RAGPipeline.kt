@@ -20,7 +20,9 @@ class RAGPipeline(
     private val customerRepository: CustomerRepository,
     private val knowledgeRepository: KnowledgeRepository,
     private val teachRepository: TeachRepository,
-    private val llmEngine: LocalLLMEngine
+    private val llmEngine: LocalLLMEngine,
+    private val hybridLLMManager: HybridLLMManager? = null,
+    private val privacyFilter: PrivacyFilter = PrivacyFilter()
 ) {
 
     suspend fun buildContextAndGenerate(
@@ -53,6 +55,10 @@ class RAGPipeline(
         val unshownProfiles = foundProfiles.filter { !shownCodes.contains(it.profileCode) }
         val finalProfiles = if (unshownProfiles.isNotEmpty()) unshownProfiles else foundProfiles.take(3)
 
+        // Apply Privacy Filter
+        val privacyMode = hybridLLMManager?.privacyMode ?: PrivacyMode.STRICT
+        val safeProfilesForPrompt = privacyFilter.filterProfilesForPrivacy(finalProfiles, privacyMode)
+
         // 3. Knowledge Base Retrieval
         val kbChunks = knowledgeRepository.searchKnowledge(incomingMessage, limit = 3)
         val kbTextList = kbChunks.map { it.chunkText }
@@ -78,9 +84,9 @@ class RAGPipeline(
             sb.append("\n")
         }
 
-        if (finalProfiles.isNotEmpty()) {
+        if (safeProfilesForPrompt.isNotEmpty()) {
             sb.append("MATCHED PROFILES:\n")
-            finalProfiles.forEach { p ->
+            safeProfilesForPrompt.forEach { p ->
                 sb.append("Code: ${p.profileCode}, Name: ${p.name}, Age: ${p.age}, Gender: ${p.gender}, City: ${p.city}, Edu: ${p.education}, Occ: ${p.occupation}\n")
             }
             sb.append("\n")
@@ -104,8 +110,13 @@ class RAGPipeline(
             usedKnowledgeChunks = kbTextList
         )
 
-        // Generate response using local LLM
-        val rawResponse = llmEngine.generateResponse(prompt)
+        // Generate response using Hybrid LLM Manager or Local Engine
+        val rawResponse = if (hybridLLMManager != null) {
+            val response = hybridLLMManager.generateResponseWithFallback(LLMRequest(prompt = prompt))
+            response.content
+        } else {
+            llmEngine.generateResponse(prompt)
+        }
 
         return Pair(ragResult, rawResponse)
     }
